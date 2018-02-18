@@ -41,11 +41,10 @@ class BookscrapyPipelineToExcel(object):
     def process_item(self, item, spider):
         line = [item['downid'],item['bookname'],item['author'],item['datasize'],item['introduction'],item['topclass'],item['bookclass'],item['remarks']]
         self.ws.append(line)
-        self.wb.save('./'+self.wbname)
         return item
-
+        
     def close_spider(self,spider):
-        pass
+        self.wb.save('./'+self.wbname)
 
 class MySQLPipeline(object):
 
