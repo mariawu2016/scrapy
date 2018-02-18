@@ -35,7 +35,7 @@ class bscrapy6(scrapy.Spider):
     def parse_book_list(self, response):#书名列表页
         #pages=response.xpath("//*[@class='man_first']/ul/li")
         #取红色热门小说
-        #pages=response.xpath("//*[@class='man_first']/ul/li[contains(h1/a//@color,'#FF0000')]")
+        #pages=response.xpath("//*[@class='man_first']/ul/li[contains(h1/a/@color,'#FF0000')]")
         pages=response.xpath(u"//*[@class='man_first']/ul/li[contains(p/text(),'龙马')]")
         #print pages
         if len(pages)!=0:
