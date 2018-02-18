@@ -36,18 +36,19 @@ class bscrapy5(scrapy.Spider):
         #取红色热门小说
         pages=response.xpath("//*[@class='man_first']/ul/li[contains(h1/a/font/@color,'#FF0000')]")
         #print pages
-        for page in pages:
-            item=BookscrapyItem()#注意item的生成时机，不可过早，否则数据返回后会层层覆盖。
-            item['topclass']=response.xpath("normalize-space(//*[@class='listcd']/a[last()-1]/text())").extract_first()
-            item['bookclass']=response.xpath("normalize-space(//*[@class='listcd']/a[last()]/text())").extract_first()
-            item['bookname']=page.xpath("normalize-space(./h1/a/@title)").extract_first()
-            item['author']=page.xpath("normalize-space(./h3/text())").extract_first()
-            item['downid']=re.sub(r'\D',"",page.xpath("./h1/a/@href")[0].extract())
-            item['datasize']=page.xpath("normalize-space(./h4/text())").extract_first()
-            book_url=self.start_urls[0]+page.xpath("./h1/a/@href").extract_first()
-            #print book_url
-            #print("%s,%s,%s,%s|%s\n\r"%(item['bookname'],item['author'],item['downid'],item['topclass'],item['bookclass']))
-            yield scrapy.Request(book_url,callback=self.parse_book_info,meta={'item':item})
+        if len(pages)!=0:
+            for page in pages:
+                item=BookscrapyItem()#注意item的生成时机，不可过早，否则数据返回后会层层覆盖。
+                item['topclass']=response.xpath("normalize-space(//*[@class='listcd']/a[last()-1]/text())").extract_first()
+                item['bookclass']=response.xpath("normalize-space(//*[@class='listcd']/a[last()]/text())").extract_first()
+                item['bookname']=page.xpath("normalize-space(./h1/a/@title)").extract_first()
+                item['author']=page.xpath("normalize-space(./h3/text())").extract_first()
+                item['downid']=re.sub(r'\D',"",page.xpath("./h1/a/@href").extract_first())
+                item['datasize']=page.xpath("normalize-space(./h4/text())").extract_first()
+                book_url=self.start_urls[0]+page.xpath("./h1/a/@href").extract_first()
+                #print book_url
+                #print("%s,%s,%s,%s|%s\n\r"%(item['bookname'],item['author'],item['downid'],item['topclass'],item['bookclass']))
+                yield scrapy.Request(book_url,callback=self.parse_book_info,meta={'item':item})
 
     def parse_book_info(self, response):#书详情页面
         item = response.meta['item']
