@@ -6,7 +6,7 @@ import os
 from bookscrapy.items import BookscrapyItem
 
 class bscrapy8(scrapy.Spider):
-    key=u'热门'
+    key=u'hot'
     name="bsc8"#爬虫名称
     allowed_domains=["m.bookbao.cc"]#允许的域名
     start_urls=["http://m.bookbao.cc"]
