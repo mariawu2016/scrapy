@@ -19,3 +19,4 @@ class BookscrapyItem(scrapy.Item):
     bookclass=scrapy.Field()
     topclass=scrapy.Field()
     remarks=scrapy.Field()
+    downloadurl=scrapy.Field()

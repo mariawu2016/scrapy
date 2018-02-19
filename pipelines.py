@@ -32,14 +32,14 @@ class BookscrapyPipeline(object):
 class BookscrapyPipelineToExcel(object):
     def __init__(self):
         now_time = datetime.datetime.now()
-        dt=datetime.datetime.strftime(now_time,'%Y-%m-%d %H：%M：%S ')
+        dt=datetime.datetime.strftime(now_time,'(%Y-%m-%d %H:%M:%S) ')
         self.wbname=dt+'books.xlsx'
         self.wb = Workbook()
         self.ws = self.wb.active
-        self.ws.append(['下载id', '书名', '作者', '大小', '简介', '大类', '子分类', '备注'])
+        self.ws.append(['下载id', '书名', '作者', '大小', '简介', '大类', '子分类', '备注','下载'])
         
     def process_item(self, item, spider):
-        line = [item['downid'],item['bookname'],item['author'],item['datasize'],item['introduction'],item['topclass'],item['bookclass'],item['remarks']]
+        line = [item['downid'],item['bookname'],item['author'],item['datasize'],item['introduction'],item['topclass'],item['bookclass'],item['remarks'],item['downloadurl']]
         self.ws.append(line)
         return item
         
