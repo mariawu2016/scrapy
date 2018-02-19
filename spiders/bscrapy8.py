@@ -6,7 +6,7 @@ import os
 from bookscrapy.items import BookscrapyItem
 
 class bscrapy8(scrapy.Spider):
-    key=u'hot'
+    #key=u'hot'
     name="bsc8"#爬虫名称
     allowed_domains=["m.bookbao.cc"]#允许的域名
     start_urls=["http://m.bookbao.cc"]
@@ -68,10 +68,10 @@ class bscrapy8(scrapy.Spider):
         for u in durls:
             url=u.extract()
             resp = requests.get(url)
-            if not os.path.exists('./'+self.key):
-                os.mkdir('./'+self.key)
-            dn=u'./'+self.key+'/'+item['bookname']+u'('+item['author']+u').txt'
-            with open(dn, "wb") as code:
+            if not os.path.exists('./hot'):
+                os.mkdir('./hot')
+            dn=u'./hot/'+item['bookname']+u'('+item['author']+u').txt'
+            with open(dn.replace(' ', ''), "wb") as code:
                 code.write(resp.content)
             item['downloadurl']=url
             
