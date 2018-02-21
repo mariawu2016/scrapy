@@ -36,15 +36,17 @@ class BookscrapyPipelineToExcel(object):
         self.wbname=dt+'books.xlsx'
         self.wb = Workbook()
         self.ws = self.wb.active
-        self.ws.append(['下载id', '书名', '作者', '大小', '简介', '大类', '子分类', '备注','下载'])
+        self.ws.append(['下载id', '书名', '作者', '大小', '简介', '大类', '子分类', '备注','下载','封皮'])
         
     def process_item(self, item, spider):
-        line = [item['downid'],item['bookname'],item['author'],item['datasize'],item['introduction'],item['topclass'],item['bookclass'],item['remarks'],item['downloadurl']]
+        line = [item['downid'],item['bookname'],item['author'],item['datasize'],item['introduction'],item['topclass'],item['bookclass'],item['remarks'],item['downloadurl'],item['bookface']]
         self.ws.append(line)
+        self.wb.save('./'+self.wbname)
         return item
         
     def close_spider(self,spider):
-        self.wb.save('./'+self.wbname)
+        pass
+        #self.wb.save('./'+self.wbname)
 
 class MySQLPipeline(object):
 

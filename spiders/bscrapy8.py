@@ -1,9 +1,21 @@
 # -*- coding: UTF-8 -*-
 import scrapy
 import re
-import urllib,urllib2,requests
-import os
+import urllib,urllib2
+import os,urllib,requests
 from bookscrapy.items import BookscrapyItem
+#邮件
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
+#词云
+import codecs
+import matplotlib.pyplot as plt
+from wordcloud import WordCloud
+import chardet
+import jieba
+import time
 
 class bscrapy8(scrapy.Spider):
     #key=u'hot'
@@ -46,8 +58,8 @@ class bscrapy8(scrapy.Spider):
         if len(pages)!=0:
             for page in pages:
                 item=BookscrapyItem()#注意item的生成时机，不可过早，否则数据返回后会层层覆盖。
-                item['topclass']=response.xpath("normalize-space(//*[@class='listcd']/a[last()-1]/text())").extract_first()
-                item['bookclass']=response.xpath("normalize-space(//*[@class='listcd']/a[last()]/text())").extract_first()
+                #item['topclass']=response.xpath("normalize-space(//*[@class='listcd']/a[last()-1]/text())").extract_first()
+                #item['bookclass']=response.xpath("normalize-space(//*[@class='listcd']/a[last()]/text())").extract_first()
                 #item['bookname']=page.xpath("normalize-space(./h1/a/@title)").extract_first()
                 #item['author']=page.xpath("normalize-space(./h3/text())").extract_first()
                 item['downid']=re.sub(r'\D',"",page.xpath("./h1/a/@href").extract_first())
@@ -59,21 +71,43 @@ class bscrapy8(scrapy.Spider):
 
     def parse_book_info(self, response):#书详情页面
         item = response.meta['item']
+        item['topclass']=response.xpath("normalize-space(//*[@class='listcd']/a[last()-1]/text())").extract_first()
+        item['bookclass']=response.xpath("normalize-space(//*[@class='listcd']/a[last()]/text())").extract_first()
         item['bookname']=response.xpath("//*[@class='mlist']/h1/text()").extract_first()
         item['author']=response.xpath("//*[@class='mlist']/ul/li[1]").xpath('normalize-space(string(.))').extract_first()
-        item['datasize']=response.xpath("//*[@class='mlist']/ul/li[3]").xpath('normalize-space(string(.))').extract_first()
+        item['datasize']=response.xpath("normalize-space(//*[@class='mlist']/ul/li[3]/i/following::text()[1])").extract_first()
         item['introduction']=response.xpath("//*[@class='conten']/p").xpath('string(.)').extract_first()
         item['remarks']=response.xpath("//*[@class='mlist']/h3/text()").extract_first()
-        durls=response.xpath("//*[@class='qd']/a[@class='right']/@href")
-        for u in durls:
-            url=u.extract()
-            resp = requests.get(url)
-            if not os.path.exists('./hot'):
-                os.mkdir('./hot')
-            dn=u'./hot/'+item['bookname']+u'('+item['author']+u').txt'
-            with open(dn.replace(' ', ''), "wb") as code:
-                code.write(resp.content)
-            item['downloadurl']=url
+        item['bookface']=response.xpath("//*[@class='mlist']/a/img/@src").extract_first()
+        durls=response.xpath("//*[@class='qd']/a[@class='right']/@href").extract()
+        #保存文件
+        if not os.path.exists('./hot'):
+            os.mkdir('./hot')
+        bn=item['bookname']+"("+item['author']+")["+item['bookclass']+"]["+item['topclass']+"]"
+        bn=bn.replace(" ","")
+        bnh=str(hash(bn))
+        
+        #下载文件txt
+        for i in range(0,len(durls)):
+            item['downloadurl']=durls[i]
+            resp=requests.get(durls[i])
+            with open("./hot/"+bn+".txt", "wb") as code:
+                if(code.write(resp.content)):
+                    break
+                else:
+                    continue
+        #应用词云分析得到结果
+
+        #用邮件生成阅读摘要，并发出
+        # for u in durls:
+        #     url=u.extract()
+        #     resp = requests.get(url)
+        #     if not os.path.exists('./hot'):
+        #         os.mkdir('./hot')
+        #     dn=u'./hot/'+item['bookname']+u'('+item['author']+u').txt'
+        #     dn=dn.replace(" ","")
+        #     with open(dn, "wb") as code:
+        #         code.write(resp.content)
+        #     item['downloadurl']=url
             
         yield item
-
