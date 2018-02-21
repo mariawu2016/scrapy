@@ -4,18 +4,7 @@ import re
 import urllib,urllib2
 import os,urllib,requests
 from bookscrapy.items import BookscrapyItem
-#邮件
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.application import MIMEApplication
-#词云
-import codecs
-import matplotlib.pyplot as plt
-from wordcloud import WordCloud
-import chardet
-import jieba
-import time
+
 
 class bscrapy8(scrapy.Spider):
     #key=u'hot'
@@ -80,22 +69,29 @@ class bscrapy8(scrapy.Spider):
         item['remarks']=response.xpath("//*[@class='mlist']/h3/text()").extract_first()
         item['bookface']=response.xpath("//*[@class='mlist']/a/img/@src").extract_first()
         durls=response.xpath("//*[@class='qd']/a[@class='right']/@href").extract()
+        s=""
+        for i in range(0,len(durls)):
+            if i==0:
+                s=durls[i]
+            else:
+                s=s+"|"+durls[i]
+        item['downloadurl']=s
         #保存文件
-        if not os.path.exists('./hot'):
-            os.mkdir('./hot')
-        bn=item['bookname']+"("+item['author']+")["+item['bookclass']+"]["+item['topclass']+"]"
-        bn=bn.replace(" ","")
-        bnh=str(hash(bn))
+        # if not os.path.exists('./hot'):
+        #     os.mkdir('./hot')
+        # bn=item['bookname']+"("+item['author']+")["+item['bookclass']+"]["+item['topclass']+"]"
+        # bn=bn.replace(" ","")
+        # bnh=str(hash(bn))
         
         #下载文件txt
-        for i in range(0,len(durls)):
-            item['downloadurl']=durls[i]
-            resp=requests.get(durls[i])
-            with open("./hot/"+bn+".txt", "wb") as code:
-                if(code.write(resp.content)):
-                    break
-                else:
-                    continue
+        # for i in range(0,len(durls)):
+        #     item['downloadurl']=durls[i]
+        #     resp=requests.get(durls[i])
+        #     with open("./hot/"+bn+".txt", "wb") as code:
+        #         if(code.write(resp.content)):
+        #             break
+        #         else:
+        #             continue
         #应用词云分析得到结果
 
         #用邮件生成阅读摘要，并发出

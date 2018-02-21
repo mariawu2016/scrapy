@@ -41,12 +41,13 @@ class BookscrapyPipelineToExcel(object):
     def process_item(self, item, spider):
         line = [item['downid'],item['bookname'],item['author'],item['datasize'],item['introduction'],item['topclass'],item['bookclass'],item['remarks'],item['downloadurl'],item['bookface']]
         self.ws.append(line)
-        self.wb.save('./'+self.wbname)
+        #self.wb.save('./'+self.wbname)
+        #下载文件、封皮、词云并生成邮件发送
+        
         return item
         
     def close_spider(self,spider):
-        pass
-        #self.wb.save('./'+self.wbname)
+        self.wb.save('./'+self.wbname)
 
 class MySQLPipeline(object):
 
