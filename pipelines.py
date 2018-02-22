@@ -50,7 +50,8 @@ class BookscrapyPipelineToExcel(object):
         self.ws.append(line)
         #self.wb.save('./'+self.wbname)
         #下载文件、封皮、词云并生成邮件发送
-        #send list
+        
+        #发送邮件
         durls=item['downloadurl'].split('|')
         ds=""
         for i in range(0,3):
