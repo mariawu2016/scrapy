@@ -21,3 +21,5 @@ class BookscrapyItem(scrapy.Item):
     remarks=scrapy.Field()
     downloadurl=scrapy.Field()
     bookface=scrapy.Field()
+    filepath=scrapy.Field()
+    imagepath=scrapy.Field()

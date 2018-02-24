@@ -4,6 +4,7 @@
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
+import os
 import json
 from twisted.enterprise import adbapi
 from scrapy import log
@@ -14,10 +15,17 @@ from openpyxl import Workbook
 from openpyxl import load_workbook
 
 #发送邮件
+import base64
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
+
+#下载文件
+import scrapy
+from scrapy.pipelines.images import ImagesPipeline
+from scrapy.pipelines.files import FilesPipeline
+from scrapy.exceptions import DropItem
 #有编码问题
 class BookscrapyPipeline(object):
     def __init__(self):
@@ -49,22 +57,6 @@ class BookscrapyPipelineToExcel(object):
         line = [item['downid'],item['bookname'],item['author'],item['datasize'],item['introduction'],item['topclass'],item['bookclass'],item['remarks'],item['downloadurl'],item['bookface']]
         self.ws.append(line)
         #self.wb.save('./'+self.wbname)
-        #下载文件、封皮、词云并生成邮件发送
-        
-        #发送邮件
-        durls=item['downloadurl'].split('|')
-        ds=""
-        for i in range(0,3):
-            durls[i]=u"<a href='"+durls[i]+u"' style='display:block;'>下载"+str(i+1)+u"</a>"
-            ds=ds+durls[i]
-
-        mailto_list = ["pistilwu@qq.com",]
-        mail_title = item['bookname']+"("+item['author']+')['+item['bookclass']+']['+item['topclass']+u'][书包网小说]'
-        mail_content = u"<table width=600><tr><td width=120>书名</td><td width=480>"+item['bookname']+u"</td></tr><tr><td>简介</td><td>"+item['introduction']+u"</td></tr><tr><td>下载链接</td><td>"+ds+"</td></tr></table>"
-        #mail_content="<table><tr><td>简介</td><td>"+item['introduction']+u"</td></tr><tr><td>下载链接</td><td>"+durls.join()+"</td></tr></table>"
-        mm = Mailer(mailto_list,mail_title,mail_content)
-        res = mm.sendMail()
-        print res
         return item
         
     def close_spider(self,spider):
@@ -103,12 +95,79 @@ class MySQLPipeline(object):
     def handle_error(self, e):
         log.err(e)
 
+#图片下载类
+class DownloadImagesPipeline(ImagesPipeline):
+    # def file_path(self, request, response=None, info=None):  
+    #     image_guid = request.url.split('/')[-1]  
+    #     return u'full/%s' % (image_guid)
+    
+    def get_media_requests(self, item, info):
+        #yield scrapy.Request("http://m.bookbao.cc"+item['bookface'])
+        yield scrapy.Request("http://m.bookbao.cc%s"%(item['bookface']))
+
+    def item_completed(self, results, item, info):
+        image_paths = [x['path'] for ok, x in results if ok]
+        if not image_paths:
+            raise DropItem("Item contains no files")
+        item['imagepath'] = image_paths
+        # if item['bookname']:
+        #     newname=item['bookname']+'bookface.jpg'
+        #     os.rename("/images/"+image_paths[0], "/results/full/" + newname)
+        #     item['imagepath']="/results/full/" + newname
+        return item
+
+#文件下载类
+class DownloadFilesPipeline(FilesPipeline):
+    # def file_path(self, request, response=None, info=None):  
+    #     file_guid = request.url.split('/')[-1]
+    #     #file_guid=file_guid.encode("gb2312") 
+    #     #file_guid=item['bookname']+"("+item['author']+")"
+    #     return 'full/%s' % (file_guid)
+
+    def get_media_requests(self, item, info):
+        for file_url in item['downloadurl'].split("|"):
+            yield scrapy.Request(file_url)
+
+    def item_completed(self, results, item, info):
+        file_paths = [x['path'] for ok, x in results if ok]
+        if not file_paths:
+            raise DropItem("Item contains no files")
+        item['filepath'] = file_paths
+        # if item['bookname']:
+        #     newname=item['bookname']+'('+item['author']+').txt'
+        #     os.rename("/results/"+file_paths[0], "/results/full/" + newname)
+        #     item['filepath']="/results/full/" + newname 
+
+        #发送邮件
+        durls=item['downloadurl'].split('|')
+        ds=""
+        for i in range(0,3):
+            durls[i]=u"<a href='"+durls[i]+u"' style='display:block;'>下载"+str(i+1)+u"</a>"
+            ds=ds+durls[i]
+
+        mailto_list = ["pistilwu@qq.com",]
+        mail_title = item['bookname']+"("+item['author']+')['+item['bookclass']+']['+item['topclass']+u'][书包网小说]'
+        mail_content = u"<table width=700><tr><td width=150>书名|作者</td><td width=550>"+item['bookname']+"|"+item['author']+u"</td></tr>"+\
+                       u"<tr><td>分类</td><td>"+item['topclass']+"|"+item['bookclass']+"</td></tr>"+\
+                       u"<tr><td>简介</td><td>"+item['introduction']+u"</td></tr>"+\
+                       u"<tr><td>下载链接</td><td>"+ds+"</td></tr></table>"
+        #mail_content="<table><tr><td>简介</td><td>"+item['introduction']+u"</td></tr><tr><td>下载链接</td><td>"+durls.join()+"</td></tr></table>"
+        mail_filepath=item['filepath']
+        mail_imagepath=item['imagepath']
+        bookname=item['bookname']
+        mm = Mailer(mailto_list,mail_title,mail_content,mail_filepath,bookname,mail_imagepath)
+        res = mm.sendMail()
+        print("Mailer："+res)
+        return item
 #邮件发送类
 class Mailer(object):
-    def __init__(self,maillist,mailtitle,mailcontent):#,mailattpath,mailattname):
+    def __init__(self,maillist,mailtitle,mailcontent,filepath,filename,imagepath):
         self.mail_list = maillist
         self.mail_title = mailtitle
         self.mail_content = mailcontent
+        self.mail_imagepath=imagepath
+        self.mail_filepath=filepath
+        self.file_name=filename
 
         self.mail_host = "smtp.qq.com"
         self.mail_user = "pistilwu"
@@ -116,7 +175,6 @@ class Mailer(object):
         self.mail_postfix = "qq.com"
 
     def sendMail(self):
- 
         me = self.mail_user + "<" + self.mail_user + "@" + self.mail_postfix + ">"
         msg = MIMEMultipart()
         msg['Subject'] =self.mail_title
@@ -128,19 +186,26 @@ class Mailer(object):
         msg.attach(puretext)
 
         # 构造附件
-        #att = MIMEText(open(mailattpath+mailattname, "rb").read(), "base64", "utf-8")
-        #att["Content-Type"] = "application/octet-stream"
+        project_dir=os.path.abspath(os.path.dirname(__file__))
+        fpath=os.path.join(project_dir,'results')
+        #fname=self.mail_filepath[0].split('/')[-1]
+        fname=self.file_name+".txt"
+        att = MIMEText(open(os.path.join(fpath,self.mail_filepath[0]), "rb").read(), "base64", "utf-8")
+        att["Content-Type"] = "application/octet-stream"
         # 附件名称为中文时的写法
-        #att.add_header("Content-Disposition", "attachment", filename=("gbk", "", mailattname))
+        att.add_header("Content-Disposition", "attachment", filename=("utf-8", "", base64.b64encode(fname.encode('UTF-8'))))
+        #att.add_header('Content-Disposition', 'attachment', fname=fname.encode('gb2312'))
         # 附件名称非中文时的写法
-        #att["Content-Disposition"] = 'attachment; filename="test.txt"'
+        #att["Content-Disposition"] = 'attachment; filename='+os.path.join(fpath,self.mail_filepath[0])
         #print(1)
-        #msg.attach(att)
+        msg.attach(att)
 
-        # jpg类型的附件
-        #jpgpart = MIMEApplication(open('/home/mypan/1949777163775279642.jpg', 'rb').read())
-        #jpgpart.add_header('Content-Disposition', 'attachment', filename='beauty.jpg')
-        #msg.attach(jpgpart)
+        #jpg类型的附件
+        ppath=os.path.join(project_dir,'images')
+        pname=self.mail_imagepath[0].split('/')[-1]
+        jpgpart = MIMEApplication(open(os.path.join(ppath,self.mail_imagepath[0]), 'rb').read())
+        jpgpart.add_header('Content-Disposition', 'attachment', filename=pname)
+        msg.attach(jpgpart)
 
         # 首先是xlsx类型的附件
         #xlsxpart = MIMEApplication(open('test.xlsx', 'rb').read())
@@ -167,3 +232,5 @@ class Mailer(object):
         except Exception, e:
             print str(e)
             return False
+
+

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import os
 # Scrapy settings for bookscrapy project
 #
 # For simplicity, this file contains only settings considered important or
@@ -65,10 +65,19 @@ ROBOTSTXT_OBEY = True
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
+    #'scrapy.pipeline.images.ImagesPipeline': 1
+#   'scrapy.pipeline.files.FilesPipeline': 2
 #    'bookscrapy.pipelines.BookscrapyPipeline': 20,
 #   'bookscrapy.pipelines.MySQLPipeline':400,
     'bookscrapy.pipelines.BookscrapyPipelineToExcel': 200,
+    'bookscrapy.pipelines.DownloadImagesPipeline': 20,
+    'bookscrapy.pipelines.DownloadFilesPipeline': 21
 }
+IMAGES_URLS_FIELD ="bookface"  #image_url是在items.py中配置的网络爬取得图片地址
+#配置保存本地的地址
+project_dir=os.path.abspath(os.path.dirname(__file__))  #获取当前爬虫项目的绝对路径
+IMAGES_STORE=os.path.join(project_dir,'images')  #组装新的图片路径
+FILES_STORE =os.path.join(project_dir,'results')  #组装新的文件路径
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See http://doc.scrapy.org/en/latest/topics/autothrottle.html
