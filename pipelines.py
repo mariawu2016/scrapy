@@ -146,9 +146,9 @@ class DownloadFilesPipeline(FilesPipeline):
             ds=ds+durls[i]
 
         mailto_list = ["pistilwu@qq.com",]
-        mail_title = item['bookname']+"("+item['author']+')['+item['bookclass']+']['+item['topclass']+u'][书包网小说]'
-        mail_content = u"<table width=700><tr><td width=150>书名|作者</td><td width=550>"+item['bookname']+"|"+item['author']+u"</td></tr>"+\
-                       u"<tr><td>分类</td><td>"+item['topclass']+"|"+item['bookclass']+"</td></tr>"+\
+        mail_title = item['bookname']+"("+item['author']+")("+item['datasize']+")["+item['bookclass']+"]["+item['topclass']+u"][书包网小说]"
+        mail_content = u"<table width=700><tr><td width=150>书名 | 作者</td><td width=550>"+item['bookname']+" | "+item['author']+u"</td></tr>"+\
+                       u"<tr><td>分类</td><td>"+item['topclass']+" - "+item['bookclass']+"</td></tr>"+\
                        u"<tr><td>简介</td><td>"+item['introduction']+u"</td></tr>"+\
                        u"<tr><td>下载链接</td><td>"+ds+"</td></tr></table>"
         #mail_content="<table><tr><td>简介</td><td>"+item['introduction']+u"</td></tr><tr><td>下载链接</td><td>"+durls.join()+"</td></tr></table>"
@@ -157,7 +157,7 @@ class DownloadFilesPipeline(FilesPipeline):
         bookname=item['bookname']
         mm = Mailer(mailto_list,mail_title,mail_content,mail_filepath,bookname,mail_imagepath)
         res = mm.sendMail()
-        print("Mailer："+res)
+        print("Mailer："+str(res))
         return item
 #邮件发送类
 class Mailer(object):
