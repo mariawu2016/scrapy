@@ -1,3 +1,4 @@
+#!/usr/bin/env python3   
 # -*- coding: utf-8 -*-
 
 # Define your item pipelines here
@@ -8,8 +9,10 @@ import os
 import json
 from twisted.enterprise import adbapi
 from scrapy import log
-import MySQLdb
-import MySQLdb.cursors
+#import MySQLdb
+#import MySQLdb.cursors
+from pymongo import MongoClient
+
 import datetime
 from openpyxl import Workbook
 from openpyxl import load_workbook
@@ -56,44 +59,55 @@ class BookscrapyPipelineToExcel(object):
     def process_item(self, item, spider):
         line = [item['downid'],item['bookname'],item['author'],item['datasize'],item['introduction'],item['topclass'],item['bookclass'],item['remarks'],item['downloadurl'],item['bookface']]
         self.ws.append(line)
-        #self.wb.save('./'+self.wbname)
+        self.wb.save('./'+self.wbname)
         return item
         
     def close_spider(self,spider):
         self.wb.save('./'+self.wbname)
 
-class MySQLPipeline(object):
-
+class MongoDBPipline(object):
     def __init__(self):
-        self.dbpool = adbapi.ConnectionPool("MySQLdb",
-                                            host = '127.0.0.1',
-                                            port=3306,
-                                            db = "bookbao",            # 数据库名
-                                            user = "root",       # 数据库用户名 
-                                            passwd = "root",     # 密码
-                                            cursorclass = MySQLdb.cursors.DictCursor, 
-                                            charset = "utf8",
-                                            #use_unicode = False 
-                                           )
+        self.conn = MongoClient('127.0.0.1', 27017)
+        self.db = self.conn.books#连接mydb数据库，没有则自动创建
+        self.books_set = self.db.books_set#使用test_set集合，没有则自动创建
     def process_item(self, item, spider):
-        query = self.dbpool.runInteraction(self._conditional_insert, item)
-        query.addErrback(self.handle_error)
-        return item
+        dic={"downid":item['downid'],"bookname":item['bookname'],"author":item['author'],"datasize":item['datasize'],"introduction":item['introduction'],"topclass":item['topclass'],"bookclass":item['bookclass'],"remarks":item['remarks'],"downloadurl":item['downloadurl'],"bookface":item['bookface']}
+        if not self.books_set.find_one({"downid":item['downid']}):
+            #插入记录
+            self.books_set.insert(dic)
+            return item
+# class MySQLPipeline(object):
 
-    def _conditional_insert(self, tb, item):            
-        # num=len(item)
-        # for k in range(0,num):
-        #     item[k] = item[k].encode("utf8")
-        # tb.execute("insert into books (downid, bookname,author,datasize,introduction,topclass,bookclass,remarks),\
-        #             values (%s, %s, %s, %s, %s, %s, %s, %s),\
-        #             "(item["downid"],item["bookname"], item["author"], item["datasize"], item["introduction"], item["topclass"],\
-        #            item["bookclass"], item["remarks"]))
-        sql="insert into books (downid,bookname,author,datasize,introduction,topclass,bookclass,remarks) values(%s, %s, %s, %s, %s, %s, %s, %s)"
-        tb.execute(sql,(item['downid'],item['bookname'],item['author'],item['datasize'],item['introduction'],item['topclass'],item['bookclass'],item['remarks']))
-        log.msg("Item data in db: %s" % item, level=log.DEBUG)
+#     def __init__(self):
+#         self.dbpool = adbapi.ConnectionPool("MySQLdb",
+#                                             host = '127.0.0.1',
+#                                             port=3306,
+#                                             db = "bookbao",            # 数据库名
+#                                             user = "root",       # 数据库用户名 
+#                                             passwd = "root",     # 密码
+#                                             cursorclass = MySQLdb.cursors.DictCursor, 
+#                                             charset = "utf8",
+#                                             #use_unicode = False 
+#                                            )
+#     def process_item(self, item, spider):
+#         query = self.dbpool.runInteraction(self._conditional_insert, item)
+#         query.addErrback(self.handle_error)
+#         return item
 
-    def handle_error(self, e):
-        log.err(e)
+#     def _conditional_insert(self, tb, item):            
+#         # num=len(item)
+#         # for k in range(0,num):
+#         #     item[k] = item[k].encode("utf8")
+#         # tb.execute("insert into books (downid, bookname,author,datasize,introduction,topclass,bookclass,remarks),\
+#         #             values (%s, %s, %s, %s, %s, %s, %s, %s),\
+#         #             "(item["downid"],item["bookname"], item["author"], item["datasize"], item["introduction"], item["topclass"],\
+#         #            item["bookclass"], item["remarks"]))
+#         sql="insert into books (downid,bookname,author,datasize,introduction,topclass,bookclass,remarks) values(%s, %s, %s, %s, %s, %s, %s, %s)"
+#         tb.execute(sql,(item['downid'],item['bookname'],item['author'],item['datasize'],item['introduction'],item['topclass'],item['bookclass'],item['remarks']))
+#         log.msg("Item data in db: %s" % item, level=log.DEBUG)
+
+#     def handle_error(self, e):
+#         log.err(e)
 
 #图片下载类
 class DownloadImagesPipeline(ImagesPipeline):
@@ -103,7 +117,7 @@ class DownloadImagesPipeline(ImagesPipeline):
     
     def get_media_requests(self, item, info):
         #yield scrapy.Request("http://m.bookbao.cc"+item['bookface'])
-        yield scrapy.Request("http://m.bookbao.cc%s"%(item['bookface']))
+        yield scrapy.Request("http://m.downbook.net/%s"%(item['bookface']))
 
     def item_completed(self, results, item, info):
         image_paths = [x['path'] for ok, x in results if ok]
@@ -229,8 +243,8 @@ class Mailer(object):
             s.sendmail(me, self.mail_list, msg.as_string()) #发送内容
             s.close()
             return True
-        except Exception, e:
-            print str(e)
+        except Exception as e:
+            print(str(e))
             return False
 
 

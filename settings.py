@@ -69,9 +69,10 @@ ITEM_PIPELINES = {
 #   'scrapy.pipeline.files.FilesPipeline': 2
 #    'bookscrapy.pipelines.BookscrapyPipeline': 20,
 #   'bookscrapy.pipelines.MySQLPipeline':400,
-    'bookscrapy.pipelines.BookscrapyPipelineToExcel': 200,
-    'bookscrapy.pipelines.DownloadImagesPipeline': 20,
-    'bookscrapy.pipelines.DownloadFilesPipeline': 21
+    'bookscrapy.pipelines.MongoDBPipline': 150,
+#    'bookscrapy.pipelines.BookscrapyPipelineToExcel': 200,
+#    'bookscrapy.pipelines.DownloadImagesPipeline': 20,
+#    'bookscrapy.pipelines.DownloadFilesPipeline': 21
 }
 IMAGES_URLS_FIELD ="bookface"  #image_url是在items.py中配置的网络爬取得图片地址
 #配置保存本地的地址
