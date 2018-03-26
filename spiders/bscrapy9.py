@@ -11,7 +11,7 @@ class bscrapy9(scrapy.Spider):
     #key=u'hot'
     name="bsc9"#爬虫名称
     allowed_domains=["m.downbook.net"]#允许的域名
-    start_urls=["http://m.downbook.net/"]
+    start_urls=["http://m.downbook.net"]
     #start_urls=["http://m.bookbao.cc/TXT/list26_1.html"]
     #start_urls=["http://m.bookbao.cc/TXT/list1_1.html","http://m.bookbao.cc/TXT/list2_1.html","http://m.bookbao.cc/TXT/list26_1.html"]
     
@@ -34,7 +34,7 @@ class bscrapy9(scrapy.Spider):
         base_url=re.findall(r'\d+',base_url)
         page_nums=response.xpath("//*[@class='man_first']/dl/code/a[last()]/text()").extract_first()
         for n in range(1,int(page_nums)):
-            page_url = self.start_urls[0]+"TXT/list"+base_url[0]+"_"+str(n)+".html"
+            page_url = self.start_urls[0]+"/TXT/list"+base_url[0]+"_"+str(n)+".html"
             yield scrapy.Request(page_url,callback=self.parse_book_list)
 
     def parse_book_list(self, response):#书名列表页
